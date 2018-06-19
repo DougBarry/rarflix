@@ -30,9 +30,9 @@ Function createViewController() As Object
     controller.CreateICphotoPlayer = vcCreateICphotoPlayer
     controller.CreateVideoPlayer = vcCreateVideoPlayer
 
-    ' ljunkie - wrapper for creating a player. Sometimes it takes a few seconds from 
-    ' an initial button click before the screen updates due to various checks. This 
-    ' wrapper will create a facade screen immediately and will be closed once the 
+    ' ljunkie - wrapper for creating a player. Sometimes it takes a few seconds from
+    ' an initial button click before the screen updates due to various checks. This
+    ' wrapper will create a facade screen immediately and will be closed once the
     ' "real" function (vcCreatePlayerForItem) is finished
     controller.CreatePlayerForItem = vcCreatePlayerForItemFacade
     controller.CreatePlayerForItemFacade = vcCreatePlayerForItem
@@ -99,7 +99,7 @@ Function createViewController() As Object
 
     controller.backButtonTimer = createTimer()
     controller.backButtonTimer.SetDuration(60000, true)
-    
+
     controller.CreateUserSelectionScreen = vcCreateUserSelectionScreen
     controller.ResetIdleTimer = vcResetIdleTimer
     controller.ResetGenIdleTimer = vcResetGenIdleTimer
@@ -113,16 +113,16 @@ Function createViewController() As Object
     controller.SkipUserSelection = false    'true to skip user selection screen and show PIN screen (use case: single user with PIN)
     controller.IsLocked = false             'true when lock screen is up todo:Add method to lock without logging out
     for i = 1 to 7 step 1   'Check for other users enabled
-        if RegRead("userActive", "preferences", "0",i) = "1" then 
+        if RegRead("userActive", "preferences", "0",i) = "1" then
             controller.ShowSecurityScreen = true
             controller.RFisMultiUser = true
             exit for
         end if
     end for
-    ' Finally, check if the default user has a pin 
+    ' Finally, check if the default user has a pin
     if controller.ShowSecurityScreen = false then
         controller.SkipUserSelection = true
-        if RegRead("securityPincode","preferences",invalid) <> invalid then 
+        if RegRead("securityPincode","preferences",invalid) <> invalid then
             controller.ShowSecurityScreen = true
         end if
     end if
@@ -161,7 +161,7 @@ Function vcCreateHomeScreen()
 End Function
 
 
-Function vcCreateUserSelectionScreen() 
+Function vcCreateUserSelectionScreen()
     screen = createUserSelectionScreen(m)
     screen.ScreenName = "User Profile Selection"
     m.InitializeOtherScreen(screen, invalid)
@@ -171,15 +171,15 @@ End Function
 
 'Assumes that multi-user is enabled
 'Lock screen stays on top of everything
-' -- new addition: we must close any open dialogs 
-Function vcCreateLockScreen() 
+' -- new addition: we must close any open dialogs
+Function vcCreateLockScreen()
     TraceFunction("vcCreateLockScreen")
     currentScreen = m.screens.peek()    'current screen to stack on top of
-    
-    if currentScreen <> invalid then 
+
+    if currentScreen <> invalid then
         ' ljunkie - Message Dialog and Video Screen ( playing video ) need to be closed
         '  if not, they will allow backdoor access into channel after lockscreen
-        if type(currentScreen.Screen) = "roMessageDialog" or type(currentScreen.Screen) = "roVideoScreen" then 
+        if type(currentScreen.Screen) = "roMessageDialog" or type(currentScreen.Screen) = "roVideoScreen" then
             Debug("---- Top screen is a " + type(currentScreen.Screen) + " -- need to close before we lock")
             ' close the screen -- vcPopScreen takes care of any other dialogs
             m.popscreen(currentScreen)
@@ -194,13 +194,13 @@ Function vcCreateLockScreen()
         fn = firstof(RegRead("friendlyName", "preferences", invalid, GetGlobalAA().userNum),"Default User")
     else
         fn = firstof(RegRead("friendlyName", "preferences", invalid, GetGlobalAA().userNum),"User Profile " + tostr(GetGlobalAA().userNum))
-    end if 
+    end if
     m.InitializeOtherScreen(pinScreen, [fn])
-    currentScreen.OldActivate = invalid 'store previous Activate for whatever the current screen is 
-    if currentScreen.Activate <> invalid then currentScreen.OldActivate = currentScreen.Activate          
+    currentScreen.OldActivate = invalid 'store previous Activate for whatever the current screen is
+    if currentScreen.Activate <> invalid then currentScreen.OldActivate = currentScreen.Activate
     currentScreen.Activate = lockScreenActivate     'new Activate routine
     m.IsLocked = true   'global when we're locked
-    pinScreen.txtBottom = "RARflix is locked due to inactivity.  Enter PIN Code using direction arrows on your remote control.  Press OK to retry PIN or Back to pick another User."   
+    pinScreen.txtBottom = "RARflix is locked due to inactivity.  Enter PIN Code using direction arrows on your remote control.  Press OK to retry PIN or Back to pick another User."
     ' create a facade screen below the lock screen -- this will hide closing of screens if one doesn't enter the correct pin ( back button )
     pinScreen.facade = CreateObject("roGridScreen")
     pinScreen.facade.Show()
@@ -211,12 +211,12 @@ End Function
 
 'Called when lock screen has shutdown.  Either the PIN is entered or Back is pressed
 sub lockScreenActivate(priorScreen)
-    TraceFunction("lockScreenActivate")  
+    TraceFunction("lockScreenActivate")
 
-    if (priorScreen.pinOK = invalid) or (priorScreen.pinOK <> true) then    
+    if (priorScreen.pinOK = invalid) or (priorScreen.pinOK <> true) then
         'No code was entered.  We need to logout and return to the main user selection screen
         'restore old Activate before calling this
-        'm.Activate = m.OldActivate 
+        'm.Activate = m.OldActivate
         'm.ViewController.PopScreen(invalid)    'invalid will close all screens
         m.ViewController.ExitToUserSelection()
         if m.screen <> invalid then m.screen.close() ' stragler
@@ -226,10 +226,10 @@ sub lockScreenActivate(priorScreen)
         if priorScreen.facade <> invalid then priorScreen.facade.close()
         Debug("Valid PIN entered.  Unlocked.")
         m.ViewController.IsLocked = false   'notify that we're unlocked
-        'restart idle timer     
+        'restart idle timer
         m.ViewController.CreateIdleTimer()
         'Do any prior screen activations that need to happen.
-        m.Activate = m.OldActivate 
+        m.Activate = m.OldActivate
         m.OldActivate = invalid
         if m.Activate <> invalid then
             Debug("Calling old Activate")
@@ -247,25 +247,25 @@ Function vcCreateScreenForItem(context, contextIndex, breadcrumbs, show=true) As
     end if
 
     ' ljunkie - sorry for the madness ( breadcrumbs dynamic magic ) TODO - research a less hacky way
-    ' breadcrumbs for Full Grid.. when we have "1-4 of 565" as a row name --- that is ugly and this is ghetto 
+    ' breadcrumbs for Full Grid.. when we have "1-4 of 565" as a row name --- that is ugly and this is ghetto
     re = CreateObject("roRegex", "\d+\s*-\s*\d+\s+of\s+\d+", "")
-    if type(breadcrumbs) = "roArray" and breadcrumbs.count() > 1 and (re.Ismatch(breadcrumbs[0]) or re.IsMatch(breadcrumbs[1])) then 
+    if type(breadcrumbs) = "roArray" and breadcrumbs.count() > 1 and (re.Ismatch(breadcrumbs[0]) or re.IsMatch(breadcrumbs[1])) then
         if type(m.screens) = "roArray" and m.screens.count() > 1 and m.screens[1].loader <> invalid and m.screens[1].loader.contentarray <> invalid then  ' nested because I'm lame
             keynames = m.screens[1].loader.contentarray
             if item.contenttype = "appClip" then
                 breadcrumbs[0] = ""
-            else 
+            else
                 breadcrumbs[1] = UcaseFirst(firstof(item.umtitle,item.contenttype,item.type,item.viewgroup))
             end if
-    
+
             re = CreateObject("roRegex", "/library/sections/\d+/([^?\/]+)", "")
             reMeta = CreateObject("roRegex", "/library/metadata/\d+/([^?\/]+)", "")
 
             if (reMeta.isMatch(item.sourceurl)) then
                     breadcrumbs[0] = tostr(item.title)
             else if (re.isMatch(item.sourceurl)) then
-                
-                
+
+
                 fkey = re.Match(item.sourceurl)[1]
                 key = re.Match(item.sourceurl)[1]
                 for each k in keynames
@@ -276,15 +276,15 @@ Function vcCreateScreenForItem(context, contextIndex, breadcrumbs, show=true) As
                 end for
                 if fromFullGrid() then
                      ' special for music - mayb more later
-                     if tostr(key) = "albums" and item.album <> invalid then 
-                         breadcrumbs[0] = UcaseFirst(item.artist)                     
-                         breadcrumbs[1] = UcaseFirst(item.album)                     
-                     else 
+                     if tostr(key) = "albums" and item.album <> invalid then
+                         breadcrumbs[0] = UcaseFirst(item.artist)
+                         breadcrumbs[1] = UcaseFirst(item.album)
+                     else
                          ' else use the Section Name (fkey) and title, etc
-                         breadcrumbs[0] = UcaseFirst(fkey)    
+                         breadcrumbs[0] = UcaseFirst(fkey)
                          breadcrumbs[1] = UcaseFirst(firstof(item.umtitle,item.contenttype,item.type,item.viewgroup))
                      end if
-                else 
+                else
                     breadcrumbs[0] = UcaseFirst(fkey)
                 end if
             end if
@@ -297,7 +297,7 @@ Function vcCreateScreenForItem(context, contextIndex, breadcrumbs, show=true) As
          r1=CreateObject("roRegex", "Dir: ", "")
          if type(breadcrumbs) = "roArray" and breadcrumbs.count() > 1 then
             breadcrumbs[0] = r1.ReplaceAll(breadcrumbs[0], ""):breadcrumbs[1] = r1.ReplaceAll(breadcrumbs[1], "")
-            if ucase(breadcrumbs[0]) = ucase(breadcrumbs[1]) and item.description <> invalid and tostr(item.nodename) = "Directory" then 
+            if ucase(breadcrumbs[0]) = ucase(breadcrumbs[1]) and item.description <> invalid and tostr(item.nodename) = "Directory" then
                 breadcrumbs[0] = right(item.description,38)
                 if len(item.description) > 38 then breadcrumbs[0] = "..." + breadcrumbs[0]
                 breadcrumbs[1] = ""
@@ -308,14 +308,14 @@ Function vcCreateScreenForItem(context, contextIndex, breadcrumbs, show=true) As
     ' madness still continues for other areas ( now TV )
     ' ljunkie - reset breadcrumb for TV show if tv watched status enabled and title <> umtitle (post and grid view supported)
     if breadcrumbs <> invalid and (item.type = "show" or item.viewgroup = "season" or item.viewgroup = "show" or item.viewgroup = "episode") then
-        if item.umtitle <> invalid and ( type(breadcrumbs) = "roArray" and breadcrumbs[0] <> invalid and breadcrumbs[0] = item.title) or (breadcrumbs = invalid) then 
+        if item.umtitle <> invalid and ( type(breadcrumbs) = "roArray" and breadcrumbs[0] <> invalid and breadcrumbs[0] = item.title) or (breadcrumbs = invalid) then
 	        Debug("tv watched status enabled: setting breadcrumb back to original title; change from " + breadcrumbs[0] + " -to- " + item.umtitle)
             breadcrumbs[0] = item.umtitle
-        else if item.parentindex <> invalid and item.viewgroup = "episode" then 
+        else if item.parentindex <> invalid and item.viewgroup = "episode" then
     	    Debug("tv watched status enabled: setting breadcrumb back to original title (tv gridview?); change from " + breadcrumbs[0] + " -to- " + item.umtitle)
             breadcrumbs[0] = "Season " + tostr(item.parentindex)
             breadcrumbs[1] = ""
-    	else 
+    	else
             Debug("tv watched status enabled: DID not match criteria(1) -- NOT setting breadcrumb back to original title")
         end if
     end if
@@ -327,17 +327,17 @@ Function vcCreateScreenForItem(context, contextIndex, breadcrumbs, show=true) As
             if ucase(breadcrumbs[index]) = ucase(lastbc) then
                 lastbc = breadcrumbs[index]
                 breadcrumbs.Delete(index)
-            else 
+            else
                 lastbc = breadcrumbs[index]
             end if
         end for
         ''this would force us to show only 1 bread crumb. instead we will use the previous
-        'if breadcrumbs.count() = 1 then 
+        'if breadcrumbs.count() = 1 then
         'breadcrumbs.Push("")
         'end if
     end if
     ' ljunkie - ok, madness complete
- 
+
     contentType = item.ContentType
     viewGroup = item.viewGroup
     if viewGroup = invalid then viewGroup = "Invalid"
@@ -360,7 +360,7 @@ Function vcCreateScreenForItem(context, contextIndex, breadcrumbs, show=true) As
     if contentType = "episode" OR contentType = "clip" then
         screen = createVideoSpringboardScreen(context, contextIndex, m)
         screenName = "Preplay " + contentType
-    else if contentType = "movie" then 
+    else if contentType = "movie" then
         screen = createVideoSpringboardScreen(context, contextIndex, m)
         screenName = "Preplay " + contentType
     else if contentType = "series" then
@@ -378,15 +378,15 @@ Function vcCreateScreenForItem(context, contextIndex, breadcrumbs, show=true) As
         else
             screen = createPosterScreen(item, m, "arced-portrait")
             screenName = "Series Poster"
-            if fromFullGrid() and (item.umtitle <> invalid or item.title <> invalid) then 
+            if fromFullGrid() and (item.umtitle <> invalid or item.title <> invalid) then
                 breadcrumbs[0] = "All Seasons"
                 breadcrumbs[1] = firstof(item.umtitle,item.title)
             end if
         end if
     else if contentType = "artist" then
-        if poster_grid = "grid" then 
+        if poster_grid = "grid" then
             screen = createFULLGridScreen(item, m, "flat-landscape", displaymode_grid)
-        else 
+        else
             screen = createPosterScreen(item, m, "arced-square")
             screen.noRefresh = true ' no need to refresh these items (yet)
         end if
@@ -417,64 +417,64 @@ Function vcCreateScreenForItem(context, contextIndex, breadcrumbs, show=true) As
         screenName = "Section: " + tostr(item.type)
 
         ' check if section has the full grid enabled
-        if item.callbackFullGrid = true then 
+        if item.callbackFullGrid = true then
             ' - special case "item.callbackFullGrid" used when one views the filter items from a nonfull grid
             useFullGrid = true
             item.callbackFullGrid = invalid
-        else if item.ishomevideos = true then 
+        else if item.ishomevideos = true then
             useFullGrid = (RegRead("rf_full_grid_homevideo", "preferences", "disabled") = "enabled")
-        else     
+        else
             useFullGrid = (RegRead("rf_full_grid_"+tostr(item.type), "preferences", "disabled") = "enabled")
         end if
         Debug("Full Grid Enabled:"+tostr(useFullGrid) + " : " + tostr(item.type) + ": " + tostr(item.contenttype))
 
         focusrow = invalid
-        if tostr(item.type) = "artist" then 
+        if tostr(item.type) = "artist" then
             grid_style = "flat-landscape"
             displaymode_grid = "photo-fit"
             focusrow = 2
             Debug("---- override " + tostr(displaymode_grid) + "/" + tostr(grid_style) + " for section with content of " + tostr(item.type))
-        else if tostr(item.type) = "photo" then 
+        else if tostr(item.type) = "photo" then
             ' Photo Section has it's own settings for DisplayMode and GridStyle
             displaymode_grid = RegRead("photoicon_displaymode", "preferences", "photo-fit")
             grid_style = grid_style_photos
             focusrow = 2
             Debug("---- override " + tostr(displaymode_grid) + "/" + tostr(grid_style) + " for section with content of " + tostr(item.type))
-        else 
+        else
             if item.isHomeVideos = true then
                 grid_style = RegRead("homevideo_grid_style", "preferences", "flat-16x9")
             end if
         end if
 
-        ' focus on the second row if flat16x9 
+        ' focus on the second row if flat16x9
         ' TODO(ljunkie) add other modes in here to make this logic more sound
         if grid_style = "flat-16x9" then focusrow = 2
 
         item.defaultFullGrid = useFullGrid
-        if NOT item.defaultFullGrid then 
+        if NOT item.defaultFullGrid then
             ' standard Grid screen - multiple rows
 
             ' instead of adding duplicate logic to the gridHandleMessage, just reset the breadcrumbs to normal here
             breadcrumbs = [item.server.name, item.Title]
 
-            ' reset to original keys -- this will only happen if somone has changed FullGrid prefs during 
+            ' reset to original keys -- this will only happen if somone has changed FullGrid prefs during
             ' the section. We could just reload the HomeScreenRows when toggled - but this doesn't seem bad
-            if item.OrigKeys <> invalid then 
+            if item.OrigKeys <> invalid then
                 item.key = item.OrigKeys.key
                 item.sourceurl = item.OrigKeys.sourceUrl
                 item.origkeys= invalid
             end if
-            
+
             print item
             screen = createGridScreenForItem(item, m, grid_style, displaymode_grid)
             if focusrow <> invalid and screen.loader.focusrow <> invalid then screen.loader.focusrow = focusrow
-        else 
+        else
             ' full grid screen - hoping mGo will become available at some point
             Debug("---- using FULL GRID by default for this section type")
-           
+
             ' show the user a notice about using a full grid (only once)
             noticeRead = (RegRead("default_full_grid_notice", "notices", "0") <> "0")
-            if NOT noticeRead then 
+            if NOT noticeRead then
                 RegWrite("default_full_grid_notice", "1", "notices")
                 dlg = createBaseDialog()
                 dlg.Title = "Full Grid Information"
@@ -485,16 +485,16 @@ Function vcCreateScreenForItem(context, contextIndex, breadcrumbs, show=true) As
             ' shallowCopy the item for the origina key and sourceurl
             if item.origkeys = invalid then item.origkeys = ShallowCopy(item,1)
 
-            ' reset the section to use the /all endpoint 
+            ' reset the section to use the /all endpoint
             ' - make sure we have the base section key ( strip any junk/subsections )
             sectionKey = getBaseSectionKey(item.sourceurl + "/" + item.key)
             item.sourceurl = item.server.serverurl + sectionKey
             item.key = "all"
 
             screen = createFULLGridScreen(item, m, grid_style, displaymode_grid)
-            if focusrow <> invalid and screen.loader.focusrow <> invalid then 
+            if focusrow <> invalid and screen.loader.focusrow <> invalid then
                 screen.loader.focusrow = focusrow
-            else 
+            else
                 screen.loader.focusrow = 1
             end if
         end if
@@ -504,12 +504,12 @@ Function vcCreateScreenForItem(context, contextIndex, breadcrumbs, show=true) As
         if screen.loader.focusrow <> invalid then screen.loader.focusrow = 2 ' hide header row ( flat-16x9 is 5x3 )
     else if contentType = "photo" then
         if right(item.key, 8) = "children" then
-            if poster_grid = "grid" then 
+            if poster_grid = "grid" then
                 displayMode = RegRead("photoicon_displaymode", "preferences", "photo-fit")
                 Debug("---- override FULL Grid" + tostr(displayMode) + "/" + tostr(grid_style_photos) + "for section with content of " + tostr(item.type))
                 screen = createFULLGridScreen(item, m, grid_style_photos, displayMode) ' we override photos to use photo fit -- toggle added later TODO
                 screen.loader.focusrow = 1 ' lets fill the screen ( 5x3 ) - no header row ( might be annoying page up for first section.. TODO)
-            else 
+            else
                 screen = createPosterScreen(item, m, "arced-landscape")
                 screen.noRefresh = true ' no need to refresh these items (yet)
             end if
@@ -541,27 +541,27 @@ Function vcCreateScreenForItem(context, contextIndex, breadcrumbs, show=true) As
         Debug("---- Creating secondary " + poster_grid + " view for contentType=" + tostr(contentType) + ", viewGroup=" + tostr(viewGroup))
 
         sec_metadata = getSectionType()
-        if poster_grid = "grid" then 
+        if poster_grid = "grid" then
             DisplayMode = displaymode_grid
 
             focusrow = 0
-   
-            if tostr(sec_metadata.type) = "artist" then 
+
+            if tostr(sec_metadata.type) = "artist" then
                 grid_style="flat-landscape" ' TODO - create toggle for music grid style
-            else if tostr(sec_metadata.type) = "photo" then 
+            else if tostr(sec_metadata.type) = "photo" then
                 grid_style=grid_style_photos ' Use GRID style for photos
                 displayMode = RegRead("photoicon_displaymode", "preferences", "photo-fit") ' Use Display Mode for Photos
                 Debug("---- override " + tostr(displayMode) + "/" + tostr(grid_style_photos) + "for section with content of " + tostr(item.type))
                 focusrow = 1 ' lets fill the screen ( 5x3 )
-            else if sec_metadata.isHomeVideos = true then 
+            else if sec_metadata.isHomeVideos = true then
                 grid_style = RegRead("homevideo_grid_style", "preferences", "flat-16x9")
             end if
 
             screen = createFULLGridScreen(item, m, grid_style, DisplayMode)
-            if screen.loader.focusrow = invalid then  
+            if screen.loader.focusrow = invalid then
            	    screen.loader.focusrow = focusrow ' lets fill the screen ( 5x3 )
             end if
-        else 
+        else
             posterStyle = "arced-portrait"
             if tostr(sec_metadata.type) = "photo" then posterStyle = "arced-landscape"
             screen = createPosterScreen(item, m, posterStyle)
@@ -610,7 +610,7 @@ Function vcCreateScreenForItem(context, contextIndex, breadcrumbs, show=true) As
     else if tostr(item.type) = "season" then
         ' no full grid
         screen = createPosterScreen(item, m, "arced-portrait")
-    else if tostr(item.type) = "channel" then 
+    else if tostr(item.type) = "channel" then
         ' no full grid
         screen = createPosterScreen(item, m, "arced-square")
         screen.noRefresh = true ' no need to refresh these items (yet)
@@ -619,28 +619,28 @@ Function vcCreateScreenForItem(context, contextIndex, breadcrumbs, show=true) As
         ' Where do we capture channel directory?
         ' ljunkie - this doesn't seem to always be channel items ( special checks are needed now )
 
-        ' We need to know if we are in channel content. The Full Grid does not work with channels. 
+        ' We need to know if we are in channel content. The Full Grid does not work with channels.
         ' Some channels do not return valid ( expected xml ) on every query ( ICEfilms - captcha result)
         '  so we will need to query the homescreen to see if we are in a channel section
         forcePoster = false
         noRefresh = false
         sec_metadata = getSectionType()
-        if tostr(sec_metadata.contenttype) = "channel" or tostr(sec_metadata.type) = "channel" then 
+        if tostr(sec_metadata.contenttype) = "channel" or tostr(sec_metadata.type) = "channel" then
             forcePoster = true
             noRefresh = true
-        else if tostr(contentType) = "appClip" and (tostr(viewGroup) = "Invalid" or tostr(viewGroup) = "InfoList" or tostr(viewGroup) = "List") then 
+        else if tostr(contentType) = "appClip" and (tostr(viewGroup) = "Invalid" or tostr(viewGroup) = "InfoList" or tostr(viewGroup) = "List") then
             forcePoster = true
             noRefresh = true
         end if
 
-        if forcePoster then 
+        if forcePoster then
             Debug("---- forcing to Poster view -> viewgroup matches: invalid|InfoList|List or is Channel Content")
             screen = createPosterScreen(item, m, "arced-square")
             screen.noRefresh = noRefresh
         else if poster_grid = "grid" and tostr(viewGroup) <> "season" then
             ' allow the full grid if the content is not a channel or season
             screen = createFULLGridScreen(item, m, "Invalid", displaymode_grid)
-        else 
+        else
             Debug("---- forcing to Poster view")
             screen = createPosterScreen(item, m, "arced-portrait")
         end if
@@ -667,9 +667,9 @@ Function vcCreateScreenForItem(context, contextIndex, breadcrumbs, show=true) As
 
     ' set the inital focus row if we have set it ( normally due to the sub section row being added - look at the createpaginateddataloader )
     if screen.loader <> invalid then
-        ' always focus the first item in the header row. We might focus to another row later, but this will allow 
-        ' us to shift the first item to the center (3) since we are in a center focused grid. 
-        ' TODO(ljunkie) exclud this when we change(allow) to a mixed-aspect-ratio (left focus grid) 
+        ' always focus the first item in the header row. We might focus to another row later, but this will allow
+        ' us to shift the first item to the center (3) since we are in a center focused grid.
+        ' TODO(ljunkie) exclud this when we change(allow) to a mixed-aspect-ratio (left focus grid)
         if screen.loader.hasHeaderRow = true then
             Debug("focus header row to first item: row" + tostr(screen.loader.focusrow))
             screen.screen.SetFocusedListItem(0,0)
@@ -766,7 +766,7 @@ Function vcCreateContextMenu()
     end if
 
     ' Audios is playing - we should show it if the selected type is a "section" -- maybe we should look at secondary? -- also allow invalids
-    if AudioPlayer().ispaused or AudioPlayer().isplaying then 
+    if AudioPlayer().ispaused or AudioPlayer().isplaying then
         r = CreateObject("roRegex", "section|secondary", "i") ' section too - those are not special
         'showDialog = (   (r.IsMatch(itype) or r.IsMatch(ctype) or r.IsMatch(vtype)) or (itype = "invalid" and ctype = "invalid" and vtype = "invalid") )
         showDialog = ( (r.IsMatch(itype) or r.IsMatch(ctype) or r.IsMatch(vtype)) or (itype = "invalid"))
@@ -774,8 +774,8 @@ Function vcCreateContextMenu()
 
     ' always show dialog if audio/artist/album/track
     ' we will also show if channel, preferences, search, playlists, clip as they have not special actions
-    if NOT showDialog then 
-        r = CreateObject("roRegex", "audio|artist|album|track|channel|pref|search|playlists|clip", "i") 
+    if NOT showDialog then
+        r = CreateObject("roRegex", "audio|artist|album|track|channel|pref|search|playlists|clip", "i")
         showDialog = (r.IsMatch(itype) or r.IsMatch(ctype) or r.IsMatch(vtype) or r.IsMatch(tostr(screen.screenname)))
     end if
 
@@ -806,18 +806,18 @@ End Function
 Function vcCreateICphotoPlayer(obj, contextIndex=invalid, show=true, shuffled=false, slideShow=false)
     ' verify we have all the conext loaded -- possible we create this from a normal row
     dialog = invalid
-    if slideShow and obj.context.count() > 1000 then 
+    if slideShow and obj.context.count() > 1000 then
         dialog=ShowPleaseWait("Starting Photo Player... Please wait...","")
     end if
-    PhotoPlayerCheckLoaded(obj,contextIndex)        
+    PhotoPlayerCheckLoaded(obj,contextIndex)
 
     sourceReloadURL = invalid
-    if type(obj) = "roArray" then 
+    if type(obj) = "roArray" then
          context = obj
-    else 
+    else
          context = obj.context
          sourceReloadUrl = obj.sourceReloadURL
-    end if 
+    end if
 
     ' remote clients default to use the "play" button, so we can't always trust slidshow=true -- verify we have more than one item
     if ( ( type(context) = "roArray" and context.count() = 1 ) or (type(context) <> "roArray") ) then slideShow=false
@@ -828,7 +828,7 @@ Function vcCreateICphotoPlayer(obj, contextIndex=invalid, show=true, shuffled=fa
     end if
 
     ' Global Shuffle
-    if RegRead("slideshow_shuffle_play", "preferences", "0") = "1" then 
+    if RegRead("slideshow_shuffle_play", "preferences", "0") = "1" then
         ' ljunkie - we need to iterate through the items and remove directories -- they don't play nice
         ' note: if we remove directories (items) the contextIndex will be wrong - so fix it!
         cleanContext = ICphotoPlayerCleanContext(context,contextIndex)
@@ -851,12 +851,12 @@ Function vcCreateICphotoPlayer(obj, contextIndex=invalid, show=true, shuffled=fa
     m.PushScreen(screen)
 
     ' activate the slideshow timer ( we might skip this is we press SHOW instead? )
-    if slideShow then 
-        Debug("activating slideshow timer")         
+    if slideShow then
+        Debug("activating slideshow timer")
         screen.Timer.Active = true
         screen.Timer.Mark()
         screen.isPaused = false
-    else 
+    else
         screen.isSlideShow = false
     end if
 
@@ -877,12 +877,12 @@ Function vcCreateVideoPlayer(metadata, seekValue=0, directPlayOptions=0, show=tr
     ' Stop any background audio first
     ' ljunkie - we will now stop audio/photos -- but keep the state in the background
     ' this will allow us to resume ( only possible through remote control )
-    if GetViewController().IsSlideShowPlaying() and PhotoPlayer() <> invalid then 
+    if GetViewController().IsSlideShowPlaying() and PhotoPlayer() <> invalid then
         ' for now this only applies to slideshows
         ' we could extend resume audio to other screens.. TODO(ljunkie) another day
         PhotoPlayer().StopKeepState()
         AudioPlayer().StopKeepState() ' always exists
-    else 
+    else
         AudioPlayer().stop()
     end if
 
@@ -939,7 +939,7 @@ Function vcCreateVideoPlayer(metadata, seekValue=0, directPlayOptions=0, show=tr
     if seekValue = invalid then
         if metadata.viewOffset <> invalid then
             ' check to see if this is from the /status/session source -- if so we are trying to resume with someone else ( so let's get new data )
-            
+
             offsetSeconds = fix(val(metadata.viewOffset)/1000)
 
             ' ljunkie - resume video from Now Playing? we should set metadata in VideoMetatdata to more useful info TODO
@@ -952,9 +952,9 @@ Function vcCreateVideoPlayer(metadata, seekValue=0, directPlayOptions=0, show=tr
             dlg = createBaseDialog()
             dlg.Title = "Play Video"
 
-            if resume_with_user = invalid then 
+            if resume_with_user = invalid then
                 dlg.SetButton("resume", "Resume from " + TimeDisplay(offsetSeconds))
-            else 
+            else
                 user = "User"
                 if metadata.nowPlaying_user <> invalid then user = UCasefirst(metadata.nowPlaying_user,true)
                 dlg.SetButton("resume", "Sync Video with " + user)
@@ -977,8 +977,8 @@ Function vcCreateVideoPlayer(metadata, seekValue=0, directPlayOptions=0, show=tr
                 end if
             end if
 
-            if dlg.Result = invalid or dlg.Result = "invalid" then 
-                if preplayscreen <> invalid then 
+            if dlg.Result = invalid or dlg.Result = "invalid" then
+                if preplayscreen <> invalid then
                     preplayScreen.screen.close()
                     if preplayscreen.facade <> invalid then preplayscreen.facade.close()
                 end if
@@ -1020,10 +1020,10 @@ Function vcCreatePlayerForItem(context, contextIndex, seekValue=invalid, sourceR
 
     ' ljunkie - check if we are viewing a directory. We can direct play certain items ( play all sort of thing )
     ' currently works for photos/albums. Not sure how it woud work for others yet
-    ' I.E. if video(movie/clip/episode) then we need to add more logic how to play the next item.. 
+    ' I.E. if video(movie/clip/episode) then we need to add more logic how to play the next item..
     'sec_metadata = getSectionType() -- todo later - we can play appClips if they are in the photosection, but other adverse effects happen
     if item.nodename <> invalid and item.nodename = "Directory" then
-        if item.ContentType = "photo" then 
+        if item.ContentType = "photo" then
             Debug("vcCreatePlayerForItem:: trying to play photo from a directory")
 
             obj = {}:dummyItem = {}
@@ -1031,9 +1031,9 @@ Function vcCreatePlayerForItem(context, contextIndex, seekValue=invalid, sourceR
             dummyItem.sourceUrl = item.key
             dummyItem.showWait = true
             PhotoMetadataLazy(obj, dummyItem, true)
-            if obj.context <> invalid and obj.context.count() > 0 then 
+            if obj.context <> invalid and obj.context.count() > 0 then
                 for each item in obj.context
-                    if item.nodename = "Photo" then 
+                    if item.nodename = "Photo" then
                         Debug("vcCreatePlayerForItem:: CreateICPhotoPlayer with " + tostr(obj.context.count()) + " total items")
                         return m.CreateICPhotoPlayer(obj, 0, true, false, true)
                     end if
@@ -1046,7 +1046,7 @@ Function vcCreatePlayerForItem(context, contextIndex, seekValue=invalid, sourceR
             AudioPlayer().Stop()
             return m.CreateScreenForItem(context, 0, invalid)
          end if
-    else if item.ContentType = "photo" then '  and (item.nodename = invalid or item.nodename <> "Directory") then 
+    else if item.ContentType = "photo" then '  and (item.nodename = invalid or item.nodename <> "Directory") then
         Debug("vcCreatePlayerForItem:: creating photo player")
         obj = {}
         obj.context = context
@@ -1063,7 +1063,7 @@ Function vcCreatePlayerForItem(context, contextIndex, seekValue=invalid, sourceR
         ' 2) is episode and advanceToNextItem is enabled
         preplay = invalid
         continuousORshuffle = ( RegRead("continuous_play", "preferences") = "1" or RegRead("shuffle_play", "preferences") = "1" )
-        episodeAdvance = ( item.ContentType = "episode" and RegRead("advanceToNextItem", "preferences", "enabled") = "enabled" ) 
+        episodeAdvance = ( item.ContentType = "episode" and RegRead("advanceToNextItem", "preferences", "enabled") = "enabled" )
         if episodeAdvance or continuousORshuffle then
             preplay = m.CreateScreenForItem(context, contextIndex, invalid, false)
             facade = CreateObject("roGridScreen")
@@ -1107,10 +1107,10 @@ Sub vcShowFirstRun()
 End Sub
 
 Sub vcShowReleaseNotes(options = invalid)
-    if options <> invalid then 
+    if options <> invalid then
         header = GetGlobal("appName") + " v" + GetGlobal("appVersionStr")
 	where = "About"
-    else 
+    else
         header = GetGlobal("appName") + " updated to v" + GetGlobal("appVersionStr")
 	where = "Release Notes"
     end if
@@ -1121,7 +1121,7 @@ Sub vcShowReleaseNotes(options = invalid)
 
     spacer = chr(32)+chr(32)+chr(32)+chr(32)+chr(32)+chr(32)+chr(32)+chr(32)+chr(32)+chr(32)
 
-    if NOT textScreen then 
+    if NOT textScreen then
             paragraphs.Push(" * Filter and Sort Content")
             paragraphs.Push(" * Full Grid as Default [optional]")
             paragraphs.Push(" * Wake on Lan")
@@ -1129,10 +1129,20 @@ Sub vcShowReleaseNotes(options = invalid)
             paragraphs.Push(" * Photo Slideshow rewrite")
             paragraphs.Push(" * Many other improvements and bug fixes")
             paragraphs.Push("+ Profiles, Pin Codes, Trailers, and much more! http://www.rarflix.com")
-    else 
+    else
         ' We have a scrollable text screen now - we can include all the updates - yay
         us = "_______________"
         paragraphs.Push("  ")
+        paragraphs.Push(us+"v3.2.8 (2018-06-19)"+us)
+        paragraphs.Push("  ")
+        paragraphs.Push(" * @dougbarry: Multiple merges from @mikeh and @iaddis")
+        paragraphs.Push("  ")
+
+        paragraphs.Push(us+"v3.2.7 (2015-12-07)"+us)
+        paragraphs.Push("  ")
+        paragraphs.Push(" * @mikeh: Remote playback fixes")
+        paragraphs.Push("  ")
+
         paragraphs.Push(us+"v3.2.6 (2014-08-16)"+us)
         paragraphs.Push("  ")
         paragraphs.Push(" * Fix trailers (youtube)")
@@ -1190,11 +1200,11 @@ Sub vcShowReleaseNotes(options = invalid)
         'paragraphs.Push("  ")
     end if
 
-    if NOT textScreen then 
+    if NOT textScreen then
         screen = createParagraphScreen(header, paragraphs, m)
         screen.SetTitle = where
         breadcrumbs =  ["",where + " v"+GetGlobal("appVersionStr")]
-    else 
+    else
         screen = createTextScreen(header + " - www.rarflix.com", invalid , paragraphs, m, true)
         screen.screen.AddButton(1, "Press OK or Back to Continue")
         breadcrumbs =  [where,"v"+GetGlobal("appVersionStr")]
@@ -1381,7 +1391,7 @@ Sub vcPopScreen(screen)
             Debug("---- Top screen invalid - popping ")
             m.popscreen(newScreen)
             newScreen = m.screens.Peek()
-        else if type(newScreen.Screen) = "roMessageDialog" then 
+        else if type(newScreen.Screen) = "roMessageDialog" then
             ' bug in the notifications dialog - when multiple come in, they are not tracked? these is just some hacky GC
             Debug("---- Top screen is a Dialog -- that can't happen! clearing it")
             m.popscreen(newScreen)
@@ -1394,16 +1404,16 @@ Sub vcPopScreen(screen)
         ' sadly the counterText when changed on the fly affects all screen - but not the counter seperator
         ' another small bug ( or odd feature ) in the Roku firmware. So we will have to reset it for previous screens
         newScreen = m.screens.peek()
-        if newScreen <> invalid and tostr(newScreen.screen) = "roGridScreen" then 
-            if newScreen.isFullGrid <> invalid and newScreen.isFullGrid = true then 
+        if newScreen <> invalid and tostr(newScreen.screen) = "roGridScreen" then
+            if newScreen.isFullGrid <> invalid and newScreen.isFullGrid = true then
                 hideRowText(true)
-            else 
+            else
                 hideRowText(false)
             end if
         end if
 
         'ljunkie - another hack to set the current GridStyle ( only used if we refresh custom icons, for now )
-        SetGlobalGridStyle(newScreen.gridstyle) 
+        SetGlobalGridStyle(newScreen.gridstyle)
 
         screenName = firstOf(newScreen.ScreenName, type(newScreen.Screen))
         Debug("Top of stack is once again: " + screenName)
@@ -1470,10 +1480,10 @@ Sub vcShow()
 
 
      'Exit Confirmation TODO - for not we will show the user selection screen if enabled
-    if m.RFisMultiUser then 
+    if m.RFisMultiUser then
         Debug("Exit channel - show user selection")
         m = invalid
-        ' ljunkie - extra cleanup for the user switching    
+        ' ljunkie - extra cleanup for the user switching
         GetGlobalAA().clear()
         'GetGlobalAA().AddReplace("restoreAudio", restoreAudio)
         Main(invalid)   'TODO: This needs to be changed as it's recursive and starts building up the stack.
@@ -1594,7 +1604,7 @@ Sub vcUpdateScreenProperties(screen)
     else if screenType = "roImageCanvas" then
         'roImageCanvas does not currently support breadcrumbs but allow for custom function to draw them
         if enableBreadcrumbs then
-            if screen.SetBreadcrumbText <> invalid then screen.SetBreadcrumbText(bread2) 
+            if screen.SetBreadcrumbText <> invalid then screen.SetBreadcrumbText(bread2)
         end if
     else
         Debug("Not sure what to do with breadcrumbs on screen type: " + tostr(screenType))
@@ -1728,8 +1738,8 @@ sub vcResetGenIdleTimer()
     if m.genIdleTime <> invalid then
         ' try to resend WOL packets if the roku idle
         homescreen = GetViewController().home
-        if homescreen <> invalid and homescreen.WOLtimer <> invalid then 
-            if homescreen.WOLtimer <> invalid and m.genIdleTime.RemainingSeconds() = 0 then 
+        if homescreen <> invalid and homescreen.WOLtimer <> invalid then
+            if homescreen.WOLtimer <> invalid and m.genIdleTime.RemainingSeconds() = 0 then
                 Debug("roku was idle -- need to set WOL packets and refresh")
                 homescreen.WOLtimer.Name = "WOLsent"
                 homescreen.WOLtimer.count = invalid
@@ -1745,13 +1755,13 @@ end sub
 
 Sub vcCreateIdleTimer()
     m.timerIdleTime = invalid
-    if RegRead("securityPincode","preferences",invalid) <> invalid then         
+    if RegRead("securityPincode","preferences",invalid) <> invalid then
         lockTime = RegRead("locktime", "preferences","10800")
         if (lockTime <> invalid) and (strtoi(lockTime) > 0) then
             m.timerIdleTime = createTimer()
             m.timerIdleTime.SetDuration(int(strtoi(lockTime)*1000),false)
             m.ResetIdleTimer()
-        end if 
+        end if
     end if
 
     ' could use useful for some thing ( curretly used for WOL keepalives )
@@ -1794,16 +1804,16 @@ Sub InitWebServer(vc)
 End Sub
 
 Sub createScreenForItemCallback()
-    if m.breadcrumbs = invalid then 
+    if m.breadcrumbs = invalid then
         breadcrumbs = [firstOf(m.Heading, "")]
-    else 
+    else
         breadcrumbs = m.breadcrumbs
     end if
     GetViewController().CreateScreenForItem(m.Item, invalid, breadcrumbs)
 End Sub
 
 
-sub vcControl() 
+sub vcControl()
     timeout = 0
 
     while ( m.screens.Count() > 0 OR NOT AppManager().IsInitialized() ) and GetGlobalAA().ProfileExit = invalid
@@ -1825,7 +1835,7 @@ sub vcControl()
                 if m.screens[i].HandleMessage(msg) = true then
                     m.ResetIdleTimer()
                     exit for
-                end if                    
+                end if
             end for
 
             ' Process URL events. Look up the request context and call a
@@ -1880,25 +1890,25 @@ sub vcControl()
                 timeout = remaining
             end if
         next
-        
+
         'check for idle timeout
-        if m.timerIdleTime <> invalid then 'and (msg.isRemoteKeyPressed() or msg.isButtonInfo()) then 
+        if m.timerIdleTime <> invalid then 'and (msg.isRemoteKeyPressed() or msg.isButtonInfo()) then
             ' if for some reason one wants to disable timer during music, we'll handle it - we can handle paused if needed later [AudioPlayer().ispaused]
-            if RegRead("locktime_music", "preferences","enabled") <> "enabled" and (AudioPlayer().isplaying) then 
-                m.ResetIdleTimer()                
-            else 
+            if RegRead("locktime_music", "preferences","enabled") <> "enabled" and (AudioPlayer().isplaying) then
+                m.ResetIdleTimer()
+            else
 	        ' print "IDLE TIME Check: "; int(m.timerIdleTime.RemainingMillis()/int(1000))
                 if m.timerIdleTime.IsExpired()=true then  'timer expired will only return true once
-                    m.createLockScreen()    
-                end if 
+                    m.createLockScreen()
+                end if
             end if
         end if
-                 
+
     end while
 
     ' Exit confirmation?
     Debug("user has been requested to exit the channel")
-    if RegRead("exit_confirmation", "preferences","enabled") <> "enabled" then 
+    if RegRead("exit_confirmation", "preferences","enabled") <> "enabled" then
         Debug("confirmation disabled")
         return
     end if
@@ -1906,7 +1916,7 @@ sub vcControl()
 
     port = CreateObject("roMessagePort")
     dialog = CreateObject("roMessageDialog")
-    dialog.SetMessagePort(port) 
+    dialog.SetMessagePort(port)
     dialog.SetTitle("Are you sure you want to exit RARflix?")
 
     dialog.AddButton(1, "Yes")
@@ -1916,8 +1926,8 @@ sub vcControl()
 
     closeChannel = false
 
-    ' for now this will be a blocking request. The control has been stopped, so the 
-    ' channel is not listening anymore more onHandle events. 
+    ' for now this will be a blocking request. The control has been stopped, so the
+    ' channel is not listening anymore more onHandle events.
     ' pretty basic while loop - button index 2 will cancel the close/exit
     while True
         dlgMsg = wait(0, dialog.GetMessagePort())
@@ -1931,13 +1941,13 @@ sub vcControl()
                 exit while
             end if
         end if
-    end while 
+    end while
     dialog.Close()
 
 
-    ' user chose not to exit, we need to set the profileExit invalid, recreate the 
+    ' user chose not to exit, we need to set the profileExit invalid, recreate the
     ' homescreen, refresh the homescreen and start control again
-    if NOT closeChannel then 
+    if NOT closeChannel then
        Debug("user canceled exiting the channel - re-creating the homescreen now")
        GetGlobalAA().ProfileExit = invalid
        m.Home = m.CreateHomeScreen()
@@ -1948,4 +1958,3 @@ sub vcControl()
     Debug("user confirmed exiting the channel - re-creating the homescreen now")
 
 end sub
-
